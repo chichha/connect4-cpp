@@ -2,7 +2,6 @@
 #define GAME_H
 
 #include "Board.h"
-#include <string>
 
 class Game {
 public:
