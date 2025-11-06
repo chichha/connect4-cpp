@@ -1,7 +1,11 @@
 #include "GameUI.h"
 #include <iostream>
 
-int main() {
+int main(int argc, char* argv[]) {
+    // Suppress unused parameter warnings
+    (void)argc;
+    (void)argv;
+    
     GameUI gameUI;
     
     if (!gameUI.init()) {

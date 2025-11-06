@@ -1,8 +1,79 @@
 #include "Game.h"
+#include "RandomAI.h"
+#include "MinimaxAI.h"
 #include <iostream>
 #include <limits>
 
-Game::Game() : currentPlayer('X'), gameOver(false), winner(' ') {}
+Game::Game() 
+    : currentPlayer('X'), gameOver(false), winner(' '),
+      gameMode(GameMode::PLAYER_VS_PLAYER), 
+      aiDifficulty(AIDifficulty::MEDIUM),
+      minimaxDepth(4),
+      aiPlayerChar('O') {}
+
+void Game::setGameMode(GameMode mode) {
+    gameMode = mode;
+    if (mode == GameMode::PLAYER_VS_AI) {
+        initializeAI();
+    } else {
+        aiPlayer.reset();
+    }
+}
+
+void Game::setAIDifficulty(AIDifficulty difficulty) {
+    aiDifficulty = difficulty;
+    if (gameMode == GameMode::PLAYER_VS_AI) {
+        initializeAI();
+    }
+}
+
+void Game::setMinimaxDepth(int depth) {
+    minimaxDepth = depth;
+    if (gameMode == GameMode::PLAYER_VS_AI && 
+        (aiDifficulty == AIDifficulty::MEDIUM || aiDifficulty == AIDifficulty::HARD)) {
+        initializeAI();
+    }
+}
+
+GameMode Game::getGameMode() const {
+    return gameMode;
+}
+
+bool Game::isAITurn() const {
+    return gameMode == GameMode::PLAYER_VS_AI && 
+           currentPlayer == aiPlayerChar && 
+           !gameOver;
+}
+
+void Game::initializeAI() {
+    switch (aiDifficulty) {
+        case AIDifficulty::EASY:
+            aiPlayer = std::make_unique<RandomAI>();
+            break;
+        case AIDifficulty::MEDIUM:
+            aiPlayer = std::make_unique<MinimaxAI>(4, aiPlayerChar);
+            break;
+        case AIDifficulty::HARD:
+            aiPlayer = std::make_unique<MinimaxAI>(minimaxDepth, aiPlayerChar);
+            break;
+    }
+}
+
+int Game::getAIMove() {
+    if (aiPlayer && isAITurn()) {
+        return aiPlayer->selectMove(board);
+    }
+    return -1;
+}
+
+void Game::makeAIMove() {
+    if (isAITurn() && aiPlayer) {
+        int column = aiPlayer->selectMove(board);
+        if (column >= 0) {
+            makeMove(column);
+        }
+    }
+}
 
 bool Game::makeMove(int column) {
     if (gameOver) {
@@ -31,6 +102,10 @@ void Game::reset() {
     currentPlayer = 'X';
     gameOver = false;
     winner = ' ';
+    // Reinitialize AI if in AI mode
+    if (gameMode == GameMode::PLAYER_VS_AI) {
+        initializeAI();
+    }
 }
 
 char Game::getCurrentPlayer() const {

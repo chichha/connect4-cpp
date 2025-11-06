@@ -27,6 +27,8 @@ set(SOURCES
     src/Board.cpp
     src/Game.cpp
     src/GameUI.cpp
+    src/RandomAI.cpp
+    src/MinimaxAI.cpp
     src/main.cpp
 )
 
