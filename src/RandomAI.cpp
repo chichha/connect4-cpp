@@ -20,7 +20,7 @@ int RandomAI::selectMove(const Board& board) {
     }
     
     // Select a random move from valid moves
-    std::uniform_int_distribution<> dis(0, validMoves.size() - 1);
+    std::uniform_int_distribution<> dis(0, static_cast<int>(validMoves.size()) - 1);
     int randomIndex = dis(gen);
     
     return validMoves[randomIndex];
