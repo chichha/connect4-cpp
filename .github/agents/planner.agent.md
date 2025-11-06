@@ -1,3 +1,8 @@
+---
+name: planner
+description: Agent specializing in planification
+---
+
 # Copilot Agent: Planner
 
 ## Role
