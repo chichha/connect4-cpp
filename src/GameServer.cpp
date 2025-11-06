@@ -271,12 +271,19 @@ void GameServer::setError(const std::string& error) {
 }
 
 bool GameServer::sendData(SocketHandle socket, const char* data, int length) {
+    int totalSent = 0;
+    while (totalSent < length) {
 #ifdef _WIN32
-    int sent = ::send(socket, data, length, 0);
+        int sent = ::send(socket, data + totalSent, length - totalSent, 0);
 #else
-    ssize_t sent = ::send(socket, data, length, 0);
+        ssize_t sent = ::send(socket, data + totalSent, length - totalSent, 0);
 #endif
-    return sent == length;
+        if (sent <= 0) {
+            return false;  // Error or connection closed
+        }
+        totalSent += sent;
+    }
+    return true;
 }
 
 int GameServer::receiveData(SocketHandle socket, char* buffer, int bufferSize) {

@@ -48,7 +48,7 @@ public:
     
     // Network synchronization methods
     std::string serializeGameState() const;
-    bool deserializeGameState(const std::string& stateStr);
+    bool deserializeGameState(const std::string& stateStr);  // Note: Simplified version validates format only
     bool validateMove(int column, char player) const;
     
 private:

@@ -101,7 +101,9 @@ std::string NetworkProtocol::parseRejectReason(const NetworkMessage& msg) {
 int NetworkProtocol::parseMoveColumn(const NetworkMessage& msg) {
     try {
         return std::stoi(msg.payload);
-    } catch (...) {
+    } catch (const std::invalid_argument&) {
+        return -1;
+    } catch (const std::out_of_range&) {
         return -1;
     }
 }
