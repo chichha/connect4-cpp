@@ -1,109 +1,145 @@
-# GitHub Issues - UI Migration Tasks
+# GitHub Issues - AI Opponent Feature
 
-This directory contains structured task definitions for the UI migration feature, ready to be converted into GitHub issues.
+This directory contains structured task definitions for adding an AI opponent feature to the Connect 4 game, ready to be converted into GitHub issues.
 
 ## Overview
 
-There are **20 tasks** organized across **7 phases** for migrating the Connect 4 game from console to GUI.
+There are **3 tasks** for implementing AI opponents with varying difficulty levels.
+
+## Feature: Add AI Opponent
+
+The AI opponent feature allows players to play against the computer instead of requiring two human players. It includes:
+
+1. **Game Mode Selection UI** - Choose between Player vs Player or Player vs AI
+2. **Random AI (Easy)** - A simple AI that makes random valid moves
+3. **Minimax AI (Medium/Hard)** - An intelligent AI using game tree search with configurable difficulty
 
 ## Quick Start
 
-### Option 1: GitHub Actions (Easiest - Recommended)
+### Option 1: GitHub CLI (Recommended)
 
-Use the automated GitHub Actions workflow - no installation required:
-
-1. Go to **Actions** tab: https://github.com/chichha/connect4-cpp/actions
-2. Select **"Create UI Migration Issues"** workflow
-3. Click **"Run workflow"**
-4. Type `create-issues` to confirm
-5. Click **"Run workflow"** to create all 20 issues
-
-See [CREATE_ISSUES_GUIDE.md](../.github/workflows/CREATE_ISSUES_GUIDE.md) for detailed instructions.
-
-### Option 2: Local Script
-
-Use the provided shell script to create all issues at once:
+Create individual issues using the GitHub CLI:
 
 ```bash
-# Make sure you have GitHub CLI installed and authenticated
+# Install and authenticate GitHub CLI first
 gh auth login
 
-# Run the script
-./create-issues.sh
+# Create all AI opponent issues
+gh issue create \
+  --repo chichha/connect4-cpp \
+  --title "AI Task 1: Add Game Mode Selection UI" \
+  --body-file issues/ai-1-game-mode-selection-ui.md \
+  --label "enhancement,ui,ai-opponent"
+
+gh issue create \
+  --repo chichha/connect4-cpp \
+  --title "AI Task 2: Implement Random AI Player" \
+  --body-file issues/ai-2-random-ai-implementation.md \
+  --label "enhancement,ai-opponent,algorithm"
+
+gh issue create \
+  --repo chichha/connect4-cpp \
+  --title "AI Task 3: Implement Minimax AI with Configurable Depth" \
+  --body-file issues/ai-3-minimax-ai-implementation.md \
+  --label "enhancement,ai-opponent,algorithm,advanced"
 ```
 
-This will create all 20 issues in the GitHub repository with proper labels.
-
-### Option 3: Manual Creation
+### Option 2: Manual Creation
 
 You can manually create issues by copying the content from each markdown file:
 
 1. Go to https://github.com/chichha/connect4-cpp/issues/new
-2. Open a task file (e.g., `task-1-1-gui-library-dependency.md`)
+2. Open a task file (e.g., `ai-1-game-mode-selection-ui.md`)
 3. Copy the title from the frontmatter
 4. Copy the body content (everything after the second `---`)
 5. Add the labels specified in the frontmatter
 6. Create the issue
 
-### Option 4: GitHub CLI (One at a Time)
+### Option 3: Automated Script
 
-Create individual issues using the GitHub CLI:
+You can create a shell script to automate issue creation:
 
 ```bash
-# Example for Task 1.1
+#!/bin/bash
+
+# Create AI Task 1
 gh issue create \
   --repo chichha/connect4-cpp \
-  --title "Task 1.1: Add GUI Library Dependency" \
-  --body-file issues/task-1-1-gui-library-dependency.md \
-  --label "enhancement,phase-1-setup"
+  --title "AI Task 1: Add Game Mode Selection UI" \
+  --body-file issues/ai-1-game-mode-selection-ui.md \
+  --label "enhancement,ui,ai-opponent"
+
+sleep 1
+
+# Create AI Task 2
+gh issue create \
+  --repo chichha/connect4-cpp \
+  --title "AI Task 2: Implement Random AI Player" \
+  --body-file issues/ai-2-random-ai-implementation.md \
+  --label "enhancement,ai-opponent,algorithm"
+
+sleep 1
+
+# Create AI Task 3
+gh issue create \
+  --repo chichha/connect4-cpp \
+  --title "AI Task 3: Implement Minimax AI with Configurable Depth" \
+  --body-file issues/ai-3-minimax-ai-implementation.md \
+  --label "enhancement,ai-opponent,algorithm,advanced"
+
+echo "All AI opponent issues created successfully!"
 ```
 
 ## Task List
 
-### Phase 1: Setup (2 tasks)
-- `task-1-1-gui-library-dependency.md` - Add GUI Library Dependency
-- `task-1-2-build-configuration.md` - Update Build Configuration
+### Phase 1: AI Foundation (1 task)
+- **ai-1-game-mode-selection-ui.md** - Add UI to select game mode (PvP or PvE) and AI difficulty
+  - Labels: `enhancement`, `ui`, `ai-opponent`
+  - Estimated Effort: 6-8 hours
+  - Dependencies: None
 
-### Phase 2: Core UI (3 tasks)
-- `task-2-1-window-rendering.md` - Create Window and Rendering Foundation
-- `task-2-2-board-renderer.md` - Implement Board Renderer
-- `task-2-3-piece-rendering.md` - Implement Game Piece Rendering
+### Phase 2: AI Implementation (2 tasks)
+- **ai-2-random-ai-implementation.md** - Implement random AI for "Easy" difficulty
+  - Labels: `enhancement`, `ai-opponent`, `algorithm`
+  - Estimated Effort: 4-6 hours
+  - Dependencies: AI Task 1
 
-### Phase 3: User Interaction (3 tasks)
-- `task-3-1-click-selection.md` - Implement Click-Based Column Selection
-- `task-3-2-turn-feedback.md` - Add Visual Feedback for Player Turn
-- `task-3-3-win-draw-display.md` - Implement Win/Draw Visual Display
+- **ai-3-minimax-ai-implementation.md** - Implement minimax AI with configurable depth for "Medium/Hard" difficulty
+  - Labels: `enhancement`, `ai-opponent`, `algorithm`, `advanced`
+  - Estimated Effort: 10-15 hours
+  - Dependencies: AI Task 1, AI Task 2
 
-### Phase 4: Game Controls (2 tasks)
-- `task-4-1-new-game-button.md` - Add New Game / Reset Button
-- `task-4-2-quit-button.md` - Add Quit/Exit Button
+## Implementation Order
 
-### Phase 5: Refactoring (3 tasks)
-- `task-5-1-refactor-game-class.md` - Refactor Game Class for UI Independence
-- `task-5-2-ui-manager.md` - Create UI Manager/Controller Class
-- `task-5-3-update-main.md` - Update Main Entry Point
+The tasks should be implemented in the following order:
 
-### Phase 6: Polish (4 tasks)
-- `task-6-1-visual-polish.md` - Add Visual Polish
-- `task-6-2-error-handling.md` - Handle Edge Cases and Errors
-- `task-6-3-update-documentation.md` - Update Documentation
-- `task-6-4-update-cicd.md` - Update CI/CD Pipeline
+1. **AI Task 1** (Game Mode Selection UI)
+   - Provides the foundation for selecting AI opponents
+   - Establishes UI patterns for AI configuration
+   - Must be completed before AI players are useful
 
-### Phase 7: Testing (2 tasks)
-- `task-7-1-manual-testing.md` - Manual Testing
-- `task-7-2-automated-testing.md` - Create Automated Tests (Optional)
+2. **AI Task 2** (Random AI)
+   - Establishes the AI player architecture
+   - Provides immediate value with "Easy" mode
+   - Tests the game's ability to work with computer players
+   - Simpler than minimax, good for validating the infrastructure
+
+3. **AI Task 3** (Minimax AI)
+   - Builds on the AI architecture from Task 2
+   - Provides challenging "Medium" and "Hard" difficulty levels
+   - Most complex task, benefits from having infrastructure already in place
+
+## Total Estimated Effort
+
+**20-29 hours** across all three tasks
 
 ## Labels Used
 
 - `enhancement` - Feature enhancements
-- `refactoring` - Code refactoring tasks
-- `documentation` - Documentation updates
-- `testing` - Testing tasks
-- `design` - UI/UX design tasks
-- `bug` - Bug fixes and error handling
-- `ci/cd` - CI/CD pipeline tasks
-- `optional` - Optional tasks
-- `phase-1-setup` through `phase-7-testing` - Phase-specific labels
+- `ui` - User interface changes
+- `ai-opponent` - AI opponent feature
+- `algorithm` - Algorithm implementation
+- `advanced` - Advanced/complex tasks
 
 ## File Format
 
@@ -111,7 +147,7 @@ Each task file follows this structure:
 
 ```markdown
 ---
-title: "Task X.Y: Task Name"
+title: "Task Title"
 labels: ["label1", "label2"]
 assignees: []
 ---
@@ -126,33 +162,75 @@ assignees: []
 ## Rationale
 ...
 
+## Technical Considerations
+...
+
 ## Estimated Effort
 X-Y hours
 
 ## Phase
-Phase N: Phase Name
+...
 
 ## Dependencies
 ...
 
 ## Related Tasks
 ...
+
+## Testing Checklist
+...
 ```
 
 ## Prerequisites
 
-To use the automated script, you need:
+To use the GitHub CLI, you need:
 
 1. **GitHub CLI** - Install from https://cli.github.com/
 2. **Authentication** - Run `gh auth login` to authenticate
 3. **Repository Access** - Write access to the repository
 
+## Architecture Overview
+
+### AI Player Interface
+```cpp
+class AIPlayer {
+public:
+    virtual int selectMove(const Board& board) = 0;
+    virtual ~AIPlayer() = default;
+};
+```
+
+### Random AI (Easy)
+- Randomly selects from valid columns
+- No strategic thinking
+- Fast execution (< 100ms)
+
+### Minimax AI (Medium/Hard)
+- Uses minimax algorithm with alpha-beta pruning
+- Configurable search depth (1-8)
+- Strategic play with tactical awareness
+- Execution time varies by depth
+
+### Game Integration
+- Game class supports both human and AI players
+- UI allows selecting player types before game starts
+- AI moves are triggered automatically on AI's turn
+
+## Testing Strategy
+
+Each task includes a comprehensive testing checklist covering:
+- Correctness (legal moves, proper behavior)
+- Performance (acceptable response times)
+- Integration (works with existing game logic)
+- Edge cases (empty board, full board, etc.)
+- User experience (smooth gameplay, clear feedback)
+
 ## Notes
 
-- The script includes a 1-second delay between issue creations to avoid rate limiting
-- All issues will be created with appropriate labels for easy filtering
-- Issues are organized by phase for better project management
-- Each issue includes dependencies and related tasks for context
+- The AI feature is designed to be modular and extensible
+- Additional AI strategies can be added in the future by implementing the `AIPlayer` interface
+- The minimax AI can be tuned by adjusting the evaluation function
+- Consider adding move time limits for higher depths to prevent UI freezing
 
 ## Troubleshooting
 
@@ -166,10 +244,13 @@ To use the automated script, you need:
 - Ensure you have write access to the repository
 
 **Issues not created**
-- Check the script output for specific error messages
-- Verify the issue templates are valid markdown
+- Check that you're in the repository root directory
+- Verify the issue file paths are correct
+- Check GitHub API rate limits
 
 ## See Also
 
-- [UI_MIGRATION_PLAN.md](../UI_MIGRATION_PLAN.md) - Detailed migration plan
-- [TASK_SUMMARY.md](../TASK_SUMMARY.md) - Quick reference summary
+- [README.md](../README.md) - Main project documentation
+- [Connect 4 Strategy](https://en.wikipedia.org/wiki/Connect_Four) - Game strategy and analysis
+- [Minimax Algorithm](https://en.wikipedia.org/wiki/Minimax) - Algorithm reference
+- [Alpha-Beta Pruning](https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning) - Optimization technique
