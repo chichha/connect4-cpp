@@ -6,6 +6,8 @@ GameUI::GameUI()
     : window(nullptr), renderer(nullptr), font(nullptr), 
       hoveredColumn(-1), showWinMessage(false), 
       uiState(UIState::MODE_SELECTION),
+      serverIP("127.0.0.1"),
+      isNetworkHost(false),
       selectedGameMode(GameMode::PLAYER_VS_PLAYER),
       selectedAIDifficulty(AIDifficulty::MEDIUM),
       selectedMinimaxDepth(4) {}
@@ -127,9 +129,42 @@ void GameUI::handleEvents(bool& running) {
                     
                     if (uiState == UIState::MODE_SELECTION) {
                         handleModeSelectionClick(mouseX, mouseY);
+                    } else if (uiState == UIState::JOIN_GAME) {
+                        // Handle connect button
+                        if (isMouseOverConnectButton(mouseX, mouseY)) {
+                            gameClient = std::make_unique<GameClient>();
+                            if (gameClient->connect(serverIP)) {
+                                uiState = UIState::PLAYING;
+                            } else {
+                                std::cerr << "Failed to connect: " << gameClient->getLastError() << std::endl;
+                                gameClient.reset();
+                            }
+                        }
+                        // Handle back button
+                        if (isMouseOverBackButton(mouseX, mouseY)) {
+                            uiState = UIState::MODE_SELECTION;
+                        }
+                    } else if (uiState == UIState::HOST_GAME || uiState == UIState::WAITING_FOR_OPPONENT) {
+                        // Handle cancel button
+                        if (isMouseOverBackButton(mouseX, mouseY)) {
+                            if (gameServer) {
+                                gameServer->stop();
+                                gameServer.reset();
+                            }
+                            uiState = UIState::MODE_SELECTION;
+                        }
                     } else {
                         // Check if clicked on Back button
                         if (isMouseOverBackButton(mouseX, mouseY)) {
+                            // Clean up network connections
+                            if (gameServer) {
+                                gameServer->stop();
+                                gameServer.reset();
+                            }
+                            if (gameClient) {
+                                gameClient->disconnect();
+                                gameClient.reset();
+                            }
                             uiState = UIState::MODE_SELECTION;
                             game.reset();
                             showWinMessage = false;
@@ -150,13 +185,24 @@ void GameUI::handleEvents(bool& running) {
                         }
                         
                         // Check if clicked on board to make a move
-                        if (!game.isGameOver() && !game.isAITurn()) {
+                        if (uiState == UIState::PLAYING && !game.isGameOver() && !game.isAITurn()) {
                             int column = getColumnFromMouseX(mouseX);
                             if (column >= 0 && column < Board::COLS) {
-                                if (game.makeMove(column)) {
-                                    if (game.isGameOver()) {
-                                        showWinMessage = true;
-                                    }
+                                bool moveSucceeded = false;
+                                
+                                // Handle network moves
+                                if (gameClient && gameClient->isConnected()) {
+                                    moveSucceeded = gameClient->sendMove(column);
+                                } else if (gameServer && gameServer->isGameStarted()) {
+                                    // For now, allow host to make moves directly
+                                    moveSucceeded = game.makeMove(column);
+                                } else {
+                                    // Local game
+                                    moveSucceeded = game.makeMove(column);
+                                }
+                                
+                                if (moveSucceeded && game.isGameOver()) {
+                                    showWinMessage = true;
                                 }
                             }
                         }
@@ -169,11 +215,26 @@ void GameUI::handleEvents(bool& running) {
 
 void GameUI::update() {
     // Handle AI moves in AI mode
-    if (uiState == UIState::PLAYING && game.isAITurn() && !game.isGameOver()) {
+    if (uiState == UIState::PLAYING && !gameServer && !gameClient && game.isAITurn() && !game.isGameOver()) {
         // Add a small delay so AI moves are visible
         SDL_Delay(500);
         game.makeAIMove();
         if (game.isGameOver()) {
+            showWinMessage = true;
+        }
+    }
+    
+    // Update network game state
+    if (gameServer && gameServer->isGameStarted()) {
+        // Check if game is over
+        const Game& serverGame = gameServer->getGame();
+        if (serverGame.isGameOver() && !showWinMessage) {
+            showWinMessage = true;
+        }
+    } else if (gameClient && gameClient->isConnected()) {
+        // Check if game is over
+        const Game& clientGame = gameClient->getGame();
+        if (clientGame.isGameOver() && !showWinMessage) {
             showWinMessage = true;
         }
     }
@@ -186,6 +247,12 @@ void GameUI::render() {
     
     if (uiState == UIState::MODE_SELECTION) {
         renderModeSelection();
+    } else if (uiState == UIState::HOST_GAME) {
+        renderHostGameScreen();
+    } else if (uiState == UIState::JOIN_GAME) {
+        renderJoinGameScreen();
+    } else if (uiState == UIState::WAITING_FOR_OPPONENT) {
+        renderWaitingScreen();
     } else {
         // Render game elements
         renderPlayerTurn();
@@ -240,7 +307,8 @@ void GameUI::renderBoard() {
 }
 
 void GameUI::renderPieces() {
-    const Board& board = game.getBoard();
+    const Game& currentGame = getCurrentGame();
+    const Board& board = currentGame.getBoard();
     
     for (int row = 0; row < Board::ROWS; row++) {
         for (int col = 0; col < Board::COLS; col++) {
@@ -266,16 +334,18 @@ void GameUI::renderPieces() {
 void GameUI::renderPlayerTurn() {
     if (!font) return;
     
+    const Game& currentGame = getCurrentGame();
+    
     char turnText[100];
-    if (game.isGameOver()) {
-        char winner = game.getWinner();
+    if (currentGame.isGameOver()) {
+        char winner = currentGame.getWinner();
         if (winner == ' ') {
             snprintf(turnText, sizeof(turnText), "It's a Draw!");
         } else {
             snprintf(turnText, sizeof(turnText), "Player %c Wins!", winner);
         }
     } else {
-        snprintf(turnText, sizeof(turnText), "Player %c's Turn", game.getCurrentPlayer());
+        snprintf(turnText, sizeof(turnText), "Player %c's Turn", currentGame.getCurrentPlayer());
     }
     
     SDL_Color textColor = {0, 0, 0, 255};
@@ -415,6 +485,7 @@ void GameUI::renderText(const char* text, int x, int y, SDL_Color color) {
 void GameUI::renderModeSelection() {
     SDL_Color titleColor = {0, 0, 0, 255};
     SDL_Color buttonColor = {100, 150, 255, 255};
+    SDL_Color networkColor = {150, 100, 255, 255};
     SDL_Color selectedColor = {0, 200, 0, 255};
     SDL_Color startColor = {0, 150, 0, 255};
     
@@ -430,44 +501,51 @@ void GameUI::renderModeSelection() {
     drawButton(100, 140, 200, 50, "Player vs Player", pvpColor);
     drawButton(320, 140, 200, 50, "Player vs AI", pvaiColor);
     
+    // Network multiplayer buttons
+    renderText("Network Multiplayer:", 100, 220, titleColor);
+    drawButton(100, 260, 200, 50, "Host Game", networkColor);
+    drawButton(320, 260, 200, 50, "Join Game", networkColor);
+    
     // AI Difficulty selection (only if Player vs AI is selected)
     if (selectedGameMode == GameMode::PLAYER_VS_AI) {
-        renderText("Select AI Difficulty:", 100, 220, titleColor);
+        renderText("Select AI Difficulty:", 100, 340, titleColor);
         
         SDL_Color easyColor = (selectedAIDifficulty == AIDifficulty::EASY) ? selectedColor : buttonColor;
         SDL_Color medColor = (selectedAIDifficulty == AIDifficulty::MEDIUM) ? selectedColor : buttonColor;
         SDL_Color hardColor = (selectedAIDifficulty == AIDifficulty::HARD) ? selectedColor : buttonColor;
         
-        drawButton(100, 260, 150, 50, "Easy", easyColor);
-        drawButton(270, 260, 150, 50, "Medium", medColor);
-        drawButton(440, 260, 150, 50, "Hard", hardColor);
+        drawButton(100, 380, 150, 50, "Easy", easyColor);
+        drawButton(270, 380, 150, 50, "Medium", medColor);
+        drawButton(440, 380, 150, 50, "Hard", hardColor);
         
         // Show depth slider for Hard mode
         if (selectedAIDifficulty == AIDifficulty::HARD) {
-            renderText("Minimax Depth:", 100, 340, titleColor);
+            renderText("Minimax Depth:", 100, 460, titleColor);
             
             char depthText[32];
             snprintf(depthText, sizeof(depthText), "%d", selectedMinimaxDepth);
-            renderText(depthText, 250, 340, titleColor);
+            renderText(depthText, 250, 460, titleColor);
             
             // Draw slider
             SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-            SDL_Rect sliderBg = {100, 380, 400, 10};
+            SDL_Rect sliderBg = {100, 500, 400, 10};
             SDL_RenderFillRect(renderer, &sliderBg);
             
             // Draw slider handle
             int handleX = 100 + (selectedMinimaxDepth - 1) * 400 / 7;
             SDL_SetRenderDrawColor(renderer, 0, 150, 0, 255);
-            SDL_Rect handle = {handleX - 5, 370, 10, 30};
+            SDL_Rect handle = {handleX - 5, 490, 10, 30};
             SDL_RenderFillRect(renderer, &handle);
             
-            renderText("1", 90, 395, titleColor);
-            renderText("8", 505, 395, titleColor);
+            renderText("1", 90, 515, titleColor);
+            renderText("8", 505, 515, titleColor);
         }
     }
     
-    // Start button
-    drawButton(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT - 150, 200, 60, "Start Game", startColor);
+    // Start button (only for local modes)
+    if (selectedGameMode != GameMode::NETWORK_HOST && selectedGameMode != GameMode::NETWORK_CLIENT) {
+        drawButton(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT - 150, 200, 60, "Start Game", startColor);
+    }
 }
 
 void GameUI::handleModeSelectionClick(int mouseX, int mouseY) {
@@ -476,6 +554,26 @@ void GameUI::handleModeSelectionClick(int mouseX, int mouseY) {
         selectedGameMode = GameMode::PLAYER_VS_PLAYER;
     } else if (isMouseOverPvAIButton(mouseX, mouseY)) {
         selectedGameMode = GameMode::PLAYER_VS_AI;
+    }
+    
+    // Check network buttons
+    if (isMouseOverHostGameButton(mouseX, mouseY)) {
+        uiState = UIState::HOST_GAME;
+        isNetworkHost = true;
+        // Initialize server
+        gameServer = std::make_unique<GameServer>();
+        if (gameServer->start()) {
+            uiState = UIState::WAITING_FOR_OPPONENT;
+        } else {
+            std::cerr << "Failed to start server: " << gameServer->getLastError() << std::endl;
+            gameServer.reset();
+            uiState = UIState::MODE_SELECTION;
+        }
+        return;
+    } else if (isMouseOverJoinGameButton(mouseX, mouseY)) {
+        uiState = UIState::JOIN_GAME;
+        isNetworkHost = false;
+        return;
     }
     
     // Check AI difficulty buttons (only if PvAI is selected)
@@ -516,16 +614,24 @@ bool GameUI::isMouseOverPvAIButton(int mouseX, int mouseY) {
     return mouseX >= 320 && mouseX <= 520 && mouseY >= 140 && mouseY <= 190;
 }
 
+bool GameUI::isMouseOverHostGameButton(int mouseX, int mouseY) {
+    return mouseX >= 100 && mouseX <= 300 && mouseY >= 260 && mouseY <= 310;
+}
+
+bool GameUI::isMouseOverJoinGameButton(int mouseX, int mouseY) {
+    return mouseX >= 320 && mouseX <= 520 && mouseY >= 260 && mouseY <= 310;
+}
+
 bool GameUI::isMouseOverEasyButton(int mouseX, int mouseY) {
-    return mouseX >= 100 && mouseX <= 250 && mouseY >= 260 && mouseY <= 310;
+    return mouseX >= 100 && mouseX <= 250 && mouseY >= 380 && mouseY <= 430;
 }
 
 bool GameUI::isMouseOverMediumButton(int mouseX, int mouseY) {
-    return mouseX >= 270 && mouseX <= 420 && mouseY >= 260 && mouseY <= 310;
+    return mouseX >= 270 && mouseX <= 420 && mouseY >= 380 && mouseY <= 430;
 }
 
 bool GameUI::isMouseOverHardButton(int mouseX, int mouseY) {
-    return mouseX >= 440 && mouseX <= 590 && mouseY >= 260 && mouseY <= 310;
+    return mouseX >= 440 && mouseX <= 590 && mouseY >= 380 && mouseY <= 430;
 }
 
 bool GameUI::isMouseOverStartButton(int mouseX, int mouseY) {
@@ -533,8 +639,13 @@ bool GameUI::isMouseOverStartButton(int mouseX, int mouseY) {
            mouseY >= WINDOW_HEIGHT - 150 && mouseY <= WINDOW_HEIGHT - 90;
 }
 
+bool GameUI::isMouseOverConnectButton(int mouseX, int mouseY) {
+    return mouseX >= WINDOW_WIDTH / 2 - 100 && mouseX <= WINDOW_WIDTH / 2 + 100 &&
+           mouseY >= 350 && mouseY <= 410;
+}
+
 bool GameUI::isMouseOverDepthSlider(int mouseX, int mouseY) {
-    return mouseX >= 100 && mouseX <= 500 && mouseY >= 370 && mouseY <= 400;
+    return mouseX >= 100 && mouseX <= 500 && mouseY >= 490 && mouseY <= 520;
 }
 
 void GameUI::updateDepthFromMouse(int mouseX) {
@@ -545,5 +656,66 @@ void GameUI::updateDepthFromMouse(int mouseX) {
     selectedMinimaxDepth = 1 + (relativeX * 7) / 400;
     if (selectedMinimaxDepth < 1) selectedMinimaxDepth = 1;
     if (selectedMinimaxDepth > 8) selectedMinimaxDepth = 8;
+}
+
+void GameUI::renderHostGameScreen() {
+    SDL_Color titleColor = {0, 0, 0, 255};
+    SDL_Color buttonColor = {150, 50, 50, 255};
+    
+    renderText("Host Game", WINDOW_WIDTH / 2 - 60, 50, titleColor);
+    renderText("Waiting for opponent to connect...", WINDOW_WIDTH / 2 - 180, 150, titleColor);
+    
+    if (gameServer) {
+        std::string ipText = "Server IP: " + gameServer->getIPAddress();
+        renderText(ipText.c_str(), WINDOW_WIDTH / 2 - 150, 250, titleColor);
+        
+        char portText[64];
+        snprintf(portText, sizeof(portText), "Port: %d", gameServer->getPort());
+        renderText(portText, WINDOW_WIDTH / 2 - 50, 300, titleColor);
+        
+        char playersText[64];
+        snprintf(playersText, sizeof(playersText), "Players connected: %d/2", gameServer->getConnectedPlayerCount());
+        renderText(playersText, WINDOW_WIDTH / 2 - 120, 350, titleColor);
+    }
+    
+    drawButton(WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT - 150, 150, 50, "Cancel", buttonColor);
+}
+
+void GameUI::renderJoinGameScreen() {
+    SDL_Color titleColor = {0, 0, 0, 255};
+    SDL_Color buttonColor = {100, 150, 255, 255};
+    SDL_Color backColor = {150, 50, 50, 255};
+    
+    renderText("Join Game", WINDOW_WIDTH / 2 - 60, 50, titleColor);
+    renderText("Enter server IP address:", 100, 150, titleColor);
+    
+    // Simple IP display (not editable in this simple version)
+    char ipText[128];
+    snprintf(ipText, sizeof(ipText), "Server IP: %s", serverIP.c_str());
+    renderText(ipText, 100, 200, titleColor);
+    renderText("(Using default: 127.0.0.1)", 100, 250, titleColor);
+    
+    drawButton(WINDOW_WIDTH / 2 - 100, 350, 200, 60, "Connect", buttonColor);
+    drawButton(WINDOW_WIDTH / 2 - 75, WINDOW_HEIGHT - 150, 150, 50, "Back", backColor);
+}
+
+void GameUI::renderWaitingScreen() {
+    SDL_Color titleColor = {0, 0, 0, 255};
+    
+    renderText("Waiting for opponent...", WINDOW_WIDTH / 2 - 140, WINDOW_HEIGHT / 2 - 20, titleColor);
+    
+    if (gameServer && gameServer->getConnectedPlayerCount() >= 2) {
+        // Transition to game
+        uiState = UIState::PLAYING;
+    }
+}
+
+const Game& GameUI::getCurrentGame() const {
+    if (gameServer && gameServer->isGameStarted()) {
+        return gameServer->getGame();
+    } else if (gameClient && gameClient->isConnected()) {
+        return gameClient->getGame();
+    }
+    return game;
 }
 
