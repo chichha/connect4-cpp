@@ -4,9 +4,15 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "Game.h"
+#include "GameServer.h"
+#include "GameClient.h"
+#include <memory>
 
 enum class UIState {
     MODE_SELECTION,
+    HOST_GAME,
+    JOIN_GAME,
+    WAITING_FOR_OPPONENT,
     PLAYING
 };
 
@@ -31,6 +37,12 @@ private:
     bool showWinMessage;
     UIState uiState;
     
+    // Network state
+    std::unique_ptr<GameServer> gameServer;
+    std::unique_ptr<GameClient> gameClient;
+    std::string serverIP;
+    bool isNetworkHost;
+    
     // Mode selection state
     GameMode selectedGameMode;
     AIDifficulty selectedAIDifficulty;
@@ -52,6 +64,9 @@ private:
     void render();
     
     void renderModeSelection();
+    void renderHostGameScreen();
+    void renderJoinGameScreen();
+    void renderWaitingScreen();
     void renderBoard();
     void renderPieces();
     void renderPlayerTurn();
@@ -67,16 +82,22 @@ private:
     // Mode selection UI helpers
     bool isMouseOverPvPButton(int mouseX, int mouseY);
     bool isMouseOverPvAIButton(int mouseX, int mouseY);
+    bool isMouseOverHostGameButton(int mouseX, int mouseY);
+    bool isMouseOverJoinGameButton(int mouseX, int mouseY);
     bool isMouseOverEasyButton(int mouseX, int mouseY);
     bool isMouseOverMediumButton(int mouseX, int mouseY);
     bool isMouseOverHardButton(int mouseX, int mouseY);
     bool isMouseOverStartButton(int mouseX, int mouseY);
+    bool isMouseOverConnectButton(int mouseX, int mouseY);
     bool isMouseOverDepthSlider(int mouseX, int mouseY);
     void updateDepthFromMouse(int mouseX);
     
     void drawFilledCircle(int centerX, int centerY, int radius, SDL_Color color);
     void drawButton(int x, int y, int width, int height, const char* text, SDL_Color bgColor);
     void renderText(const char* text, int x, int y, SDL_Color color);
+    
+    // Helper to get the current game (local or network)
+    const Game& getCurrentGame() const;
 };
 
 #endif // GAMEUI_H

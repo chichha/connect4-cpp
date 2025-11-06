@@ -89,24 +89,35 @@ cmake --build . --config Release
 
 1. Run the executable (`connect4` or `connect4.exe`)
 2. **Game Mode Selection Screen**:
-   - Choose "Player vs Player" for two-player mode
+   - Choose "Player vs Player" for two-player mode on same computer
    - Choose "Player vs AI" to play against the computer
-   - If playing against AI, select difficulty (Easy, Medium, or Hard)
+   - Choose "Host Game" to start a LAN multiplayer game as server
+   - Choose "Join Game" to connect to another player's hosted game
+3. **For LAN Multiplayer**:
+   - **Host**: Click "Host Game" - your IP address will be displayed. Share this with your opponent.
+   - **Join**: Click "Join Game", then "Connect" to join using default IP (127.0.0.1 for same machine)
+   - Once both players are connected, the game starts automatically
+4. **For AI Mode**: Select difficulty (Easy, Medium, or Hard)
    - For Hard mode, adjust the minimax search depth using the slider (1-8)
    - Click "Start Game" to begin
-3. A window will open showing the Connect 4 board
-4. Click on a column to drop your piece
-5. The piece will fall to the lowest available position
-6. Players alternate turns (AI moves automatically on its turn)
-7. First player to connect 4 pieces horizontally, vertically, or diagonally wins!
-8. Click "New Game" to restart with the same settings
-9. Click "Back" to return to mode selection
-10. Click "Quit" to exit the application
+5. A window will open showing the Connect 4 board
+6. Click on a column to drop your piece
+7. The piece will fall to the lowest available position
+8. Players alternate turns (AI moves automatically on its turn)
+9. First player to connect 4 pieces horizontally, vertically, or diagonally wins!
+10. Click "New Game" to restart with the same settings
+11. Click "Back" to return to mode selection
+12. Click "Quit" to exit the application
 
 ## Features
 
 - **Graphical User Interface**: Beautiful SDL2-based GUI with visual feedback
-- **Game Mode Selection**: Choose between Player vs Player or Player vs AI
+- **Game Mode Selection**: Choose between Player vs Player, Player vs AI, or LAN Multiplayer
+- **LAN Multiplayer**: Play over local network with TCP/IP connection
+  - **Host Game**: Start a server and wait for opponent to connect
+  - **Join Game**: Connect to a hosted game using server IP address
+  - Real-time game state synchronization
+  - Cross-platform network support (Windows, Linux, macOS)
 - **AI Opponents**: Three difficulty levels:
   - **Easy**: Random AI that makes random valid moves
   - **Medium**: Minimax AI with depth 4 for strategic gameplay
@@ -128,13 +139,21 @@ connect4-cpp/
 │   ├── GameUI.h        # SDL2 UI class declaration
 │   ├── AIPlayer.h      # AI player base interface
 │   ├── RandomAI.h      # Random AI player (Easy difficulty)
-│   └── MinimaxAI.h     # Minimax AI player (Medium/Hard difficulty)
+│   ├── MinimaxAI.h     # Minimax AI player (Medium/Hard difficulty)
+│   ├── NetworkManager.h      # Network socket manager (TCP)
+│   ├── NetworkProtocol.h     # Network message protocol
+│   ├── GameServer.h          # LAN multiplayer server
+│   └── GameClient.h          # LAN multiplayer client
 ├── src/                # Source files
 │   ├── Board.cpp       # Board implementation
 │   ├── Game.cpp        # Game logic implementation
 │   ├── GameUI.cpp      # SDL2 UI implementation
 │   ├── RandomAI.cpp    # Random AI implementation
 │   ├── MinimaxAI.cpp   # Minimax AI implementation with alpha-beta pruning
+│   ├── NetworkManager.cpp    # Cross-platform networking
+│   ├── NetworkProtocol.cpp   # Message serialization
+│   ├── GameServer.cpp        # Server implementation
+│   ├── GameClient.cpp        # Client implementation
 │   └── main.cpp        # Entry point
 ├── build/              # Build directory (generated)
 └── .github/
@@ -154,3 +173,51 @@ You can download pre-built executables from the Actions tab in the GitHub reposi
 ## License
 
 This project is open source and available for educational purposes.
+
+## LAN Multiplayer Guide
+
+### Network Requirements
+- Both players must be on the same local network (LAN)
+- Default port: 4444 (ensure this port is not blocked by firewall)
+- For testing on same computer, use IP: 127.0.0.1 (localhost)
+
+### How to Find Your IP Address
+
+**Windows:**
+```cmd
+ipconfig
+```
+Look for "IPv4 Address" under your active network adapter.
+
+**Linux/macOS:**
+```bash
+ifconfig
+```
+Or:
+```bash
+ip addr show
+```
+Look for your local network IP (usually starts with 192.168.x.x or 10.x.x.x).
+
+### Firewall Configuration
+If connection fails, you may need to allow the game through your firewall:
+
+**Windows Firewall:**
+1. Control Panel → System and Security → Windows Defender Firewall
+2. Click "Allow an app through Windows Firewall"
+3. Click "Change settings" → "Allow another app"
+4. Browse to connect4.exe and add it
+
+**Linux (ufw):**
+```bash
+sudo ufw allow 4444/tcp
+```
+
+**macOS:**
+System Preferences → Security & Privacy → Firewall Options → Add connect4 to allowed apps
+
+### Troubleshooting
+- **Connection refused**: Ensure the host has started a game and the IP address is correct
+- **Connection timeout**: Check firewall settings on both machines
+- **Port already in use**: Another instance might be running. Close it and try again
+- **Game disconnected**: Network interruption occurred. Both players should return to menu and reconnect

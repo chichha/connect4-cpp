@@ -29,6 +29,10 @@ set(SOURCES
     src/GameUI.cpp
     src/RandomAI.cpp
     src/MinimaxAI.cpp
+    src/NetworkManager.cpp
+    src/NetworkProtocol.cpp
+    src/GameServer.cpp
+    src/GameClient.cpp
     src/main.cpp
 )
 
@@ -37,7 +41,7 @@ add_executable(connect4 ${SOURCES})
 
 # Link SDL2
 if(WIN32)
-    target_link_libraries(connect4 PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
+    target_link_libraries(connect4 PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES} ws2_32)
 else()
     target_include_directories(connect4 PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
     target_link_libraries(connect4 PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
