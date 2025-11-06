@@ -240,12 +240,12 @@ void GameUI::renderPlayerTurn() {
     if (game.isGameOver()) {
         char winner = game.getWinner();
         if (winner == ' ') {
-            sprintf(turnText, "It's a Draw!");
+            snprintf(turnText, sizeof(turnText), "It's a Draw!");
         } else {
-            sprintf(turnText, "Player %c Wins!", winner);
+            snprintf(turnText, sizeof(turnText), "Player %c Wins!", winner);
         }
     } else {
-        sprintf(turnText, "Player %c's Turn", game.getCurrentPlayer());
+        snprintf(turnText, sizeof(turnText), "Player %c's Turn", game.getCurrentPlayer());
     }
     
     SDL_Color textColor = {0, 0, 0, 255};
@@ -279,9 +279,9 @@ void GameUI::renderWinMessage() {
     char winText[100];
     char winner = game.getWinner();
     if (winner == ' ') {
-        sprintf(winText, "It's a Draw!");
+        snprintf(winText, sizeof(winText), "It's a Draw!");
     } else {
-        sprintf(winText, "Player %c Wins!", winner);
+        snprintf(winText, sizeof(winText), "Player %c Wins!", winner);
     }
     
     SDL_Color textColor = {0, 0, 0, 255};
@@ -317,20 +317,6 @@ bool GameUI::isMouseOverQuitButton(int mouseX, int mouseY) {
            mouseX <= WINDOW_WIDTH - 50 &&
            mouseY >= WINDOW_HEIGHT - 80 && 
            mouseY <= WINDOW_HEIGHT - 80 + BUTTON_HEIGHT;
-}
-
-void GameUI::drawCircle(int centerX, int centerY, int radius, SDL_Color color) {
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    
-    for (int w = 0; w < radius * 2; w++) {
-        for (int h = 0; h < radius * 2; h++) {
-            int dx = radius - w;
-            int dy = radius - h;
-            if ((dx * dx + dy * dy) <= (radius * radius)) {
-                SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
-            }
-        }
-    }
 }
 
 void GameUI::drawFilledCircle(int centerX, int centerY, int radius, SDL_Color color) {

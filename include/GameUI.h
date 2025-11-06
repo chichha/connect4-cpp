@@ -50,7 +50,6 @@ private:
     bool isMouseOverNewGameButton(int mouseX, int mouseY);
     bool isMouseOverQuitButton(int mouseX, int mouseY);
     
-    void drawCircle(int centerX, int centerY, int radius, SDL_Color color);
     void drawFilledCircle(int centerX, int centerY, int radius, SDL_Color color);
     void drawButton(int x, int y, int width, int height, const char* text, SDL_Color bgColor);
     void renderText(const char* text, int x, int y, SDL_Color color);
