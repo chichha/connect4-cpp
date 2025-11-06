@@ -13,10 +13,11 @@ if ! command -v gh &> /dev/null; then
     exit 1
 fi
 
-# Check if authenticated
-if ! gh auth status &> /dev/null; then
+# Check if authenticated (skip if GH_TOKEN is set for GitHub Actions)
+if [ -z "$GH_TOKEN" ] && ! gh auth status &> /dev/null; then
     echo "Error: Not authenticated with GitHub CLI."
     echo "Please run: gh auth login"
+    echo "Or set GH_TOKEN environment variable for GitHub Actions"
     exit 1
 fi
 

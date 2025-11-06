@@ -8,7 +8,19 @@ There are **20 tasks** organized across **7 phases** for migrating the Connect 4
 
 ## Quick Start
 
-### Option 1: Automated Creation (Recommended)
+### Option 1: GitHub Actions (Easiest - Recommended)
+
+Use the automated GitHub Actions workflow - no installation required:
+
+1. Go to **Actions** tab: https://github.com/chichha/connect4-cpp/actions
+2. Select **"Create UI Migration Issues"** workflow
+3. Click **"Run workflow"**
+4. Type `create-issues` to confirm
+5. Click **"Run workflow"** to create all 20 issues
+
+See [CREATE_ISSUES_GUIDE.md](../.github/workflows/CREATE_ISSUES_GUIDE.md) for detailed instructions.
+
+### Option 2: Local Script
 
 Use the provided shell script to create all issues at once:
 
@@ -22,7 +34,7 @@ gh auth login
 
 This will create all 20 issues in the GitHub repository with proper labels.
 
-### Option 2: Manual Creation
+### Option 3: Manual Creation
 
 You can manually create issues by copying the content from each markdown file:
 
@@ -33,7 +45,7 @@ You can manually create issues by copying the content from each markdown file:
 5. Add the labels specified in the frontmatter
 6. Create the issue
 
-### Option 3: GitHub CLI (One at a Time)
+### Option 4: GitHub CLI (One at a Time)
 
 Create individual issues using the GitHub CLI:
 
