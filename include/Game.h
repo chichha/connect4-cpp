@@ -7,9 +7,17 @@ class Game {
 public:
     Game();
     
+    // Game logic methods (UI-independent)
+    bool makeMove(int column);
+    void reset();
+    char getCurrentPlayer() const;
+    bool isGameOver() const;
+    char getWinner() const;
+    const Board& getBoard() const;
+    
+    // Console-specific methods (kept for backward compatibility)
     void start();
     void playTurn();
-    bool isGameOver() const;
     void displayWinner() const;
     
 private:

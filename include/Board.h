@@ -16,6 +16,10 @@ public:
     void display() const;
     void reset();
     
+    // Query methods for UI
+    char getCell(int row, int col) const;
+    bool isColumnFull(int column) const;
+    
 private:
     std::vector<std::vector<char>> grid;
     

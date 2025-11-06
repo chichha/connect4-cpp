@@ -17,10 +17,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Install CMake
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake
+        sudo apt-get install -y cmake libsdl2-dev libsdl2-ttf-dev
         
     - name: Create build directory
       run: mkdir build
@@ -46,11 +46,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
+    - name: Install SDL2 via vcpkg
+      run: |
+        vcpkg install sdl2:x64-windows sdl2-ttf:x64-windows
+        
     - name: Create build directory
       run: mkdir build
       
     - name: Configure CMake
-      run: cmake -S . -B build
+      run: cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
       
     - name: Build
       run: cmake --build build --config Release
@@ -59,4 +63,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: connect4-windows
-        path: build/Release/connect4.exe
+        path: build/Release/

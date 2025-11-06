@@ -98,6 +98,20 @@ void Board::reset() {
     }
 }
 
+char Board::getCell(int row, int col) const {
+    if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+        return grid[row][col];
+    }
+    return ' ';
+}
+
+bool Board::isColumnFull(int column) const {
+    if (!isValidColumn(column)) {
+        return true;
+    }
+    return getNextAvailableRow(column) == -1;
+}
+
 bool Board::checkDirection(int row, int col, int dRow, int dCol, char player) const {
     for (int i = 0; i < 4; i++) {
         int r = row + i * dRow;
