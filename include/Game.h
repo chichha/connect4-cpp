@@ -7,7 +7,9 @@
 
 enum class GameMode {
     PLAYER_VS_PLAYER,
-    PLAYER_VS_AI
+    PLAYER_VS_AI,
+    NETWORK_HOST,
+    NETWORK_CLIENT
 };
 
 enum class AIDifficulty {
@@ -43,6 +45,11 @@ public:
     void start();
     void playTurn();
     void displayWinner() const;
+    
+    // Network synchronization methods
+    std::string serializeGameState() const;
+    bool deserializeGameState(const std::string& stateStr);
+    bool validateMove(int column, char player) const;
     
 private:
     Board board;

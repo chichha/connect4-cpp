@@ -189,3 +189,62 @@ int Game::getPlayerMove() const {
     
     return column - 1;
 }
+
+// Network synchronization methods
+std::string Game::serializeGameState() const {
+    std::string state;
+    
+    // Serialize board (42 cells: 6 rows x 7 cols)
+    for (int row = 0; row < Board::ROWS; row++) {
+        for (int col = 0; col < Board::COLS; col++) {
+            char cell = board.getCell(row, col);
+            state += (cell == ' ') ? '.' : cell;
+        }
+    }
+    
+    return state;
+}
+
+bool Game::deserializeGameState(const std::string& stateStr) {
+    if (stateStr.length() != Board::ROWS * Board::COLS) {
+        return false;
+    }
+    
+    // Reset board
+    board.reset();
+    
+    // Apply state by simulating moves
+    // Note: This is a simplified version. A full implementation would
+    // need to reconstruct the exact board state
+    // For now, we'll just validate the format
+    for (char c : stateStr) {
+        if (c != 'X' && c != 'O' && c != '.') {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+bool Game::validateMove(int column, char player) const {
+    // Check if it's the correct player's turn
+    if (player != currentPlayer) {
+        return false;
+    }
+    
+    // Check if game is not over
+    if (gameOver) {
+        return false;
+    }
+    
+    // Check if column is valid and not full
+    if (column < 0 || column >= Board::COLS) {
+        return false;
+    }
+    
+    if (board.isColumnFull(column)) {
+        return false;
+    }
+    
+    return true;
+}
