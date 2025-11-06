@@ -1,3 +1,8 @@
+---
+name: developer
+description: Agent specializing in c++ development
+---
+
 # Copilot Agent: Developer
 
 ## Role
