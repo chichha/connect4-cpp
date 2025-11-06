@@ -4,7 +4,11 @@
 
 GameUI::GameUI() 
     : window(nullptr), renderer(nullptr), font(nullptr), 
-      hoveredColumn(-1), showWinMessage(false) {}
+      hoveredColumn(-1), showWinMessage(false), 
+      uiState(UIState::MODE_SELECTION),
+      selectedGameMode(GameMode::PLAYER_VS_PLAYER),
+      selectedAIDifficulty(AIDifficulty::MEDIUM),
+      selectedMinimaxDepth(4) {}
 
 GameUI::~GameUI() {
     cleanup();
@@ -111,7 +115,9 @@ void GameUI::handleEvents(bool& running) {
                 break;
                 
             case SDL_MOUSEMOTION:
-                hoveredColumn = getColumnFromMouseX(event.motion.x);
+                if (uiState == UIState::PLAYING) {
+                    hoveredColumn = getColumnFromMouseX(event.motion.x);
+                }
                 break;
                 
             case SDL_MOUSEBUTTONDOWN:
@@ -119,26 +125,38 @@ void GameUI::handleEvents(bool& running) {
                     int mouseX = event.button.x;
                     int mouseY = event.button.y;
                     
-                    // Check if clicked on New Game button
-                    if (isMouseOverNewGameButton(mouseX, mouseY)) {
-                        game.reset();
-                        showWinMessage = false;
-                        break;
-                    }
-                    
-                    // Check if clicked on Quit button
-                    if (isMouseOverQuitButton(mouseX, mouseY)) {
-                        running = false;
-                        break;
-                    }
-                    
-                    // Check if clicked on board to make a move
-                    if (!game.isGameOver()) {
-                        int column = getColumnFromMouseX(mouseX);
-                        if (column >= 0 && column < Board::COLS) {
-                            if (game.makeMove(column)) {
-                                if (game.isGameOver()) {
-                                    showWinMessage = true;
+                    if (uiState == UIState::MODE_SELECTION) {
+                        handleModeSelectionClick(mouseX, mouseY);
+                    } else {
+                        // Check if clicked on Back button
+                        if (isMouseOverBackButton(mouseX, mouseY)) {
+                            uiState = UIState::MODE_SELECTION;
+                            game.reset();
+                            showWinMessage = false;
+                            break;
+                        }
+                        
+                        // Check if clicked on New Game button
+                        if (isMouseOverNewGameButton(mouseX, mouseY)) {
+                            game.reset();
+                            showWinMessage = false;
+                            break;
+                        }
+                        
+                        // Check if clicked on Quit button
+                        if (isMouseOverQuitButton(mouseX, mouseY)) {
+                            running = false;
+                            break;
+                        }
+                        
+                        // Check if clicked on board to make a move
+                        if (!game.isGameOver() && !game.isAITurn()) {
+                            int column = getColumnFromMouseX(mouseX);
+                            if (column >= 0 && column < Board::COLS) {
+                                if (game.makeMove(column)) {
+                                    if (game.isGameOver()) {
+                                        showWinMessage = true;
+                                    }
                                 }
                             }
                         }
@@ -150,7 +168,15 @@ void GameUI::handleEvents(bool& running) {
 }
 
 void GameUI::update() {
-    // Update logic here if needed
+    // Handle AI moves in AI mode
+    if (uiState == UIState::PLAYING && game.isAITurn() && !game.isGameOver()) {
+        // Add a small delay so AI moves are visible
+        SDL_Delay(500);
+        game.makeAIMove();
+        if (game.isGameOver()) {
+            showWinMessage = true;
+        }
+    }
 }
 
 void GameUI::render() {
@@ -158,14 +184,18 @@ void GameUI::render() {
     SDL_SetRenderDrawColor(renderer, 240, 240, 240, 255);
     SDL_RenderClear(renderer);
     
-    // Render game elements
-    renderPlayerTurn();
-    renderBoard();
-    renderPieces();
-    renderButtons();
-    
-    if (showWinMessage) {
-        renderWinMessage();
+    if (uiState == UIState::MODE_SELECTION) {
+        renderModeSelection();
+    } else {
+        // Render game elements
+        renderPlayerTurn();
+        renderBoard();
+        renderPieces();
+        renderButtons();
+        
+        if (showWinMessage) {
+            renderWinMessage();
+        }
     }
     
     // Present
@@ -292,11 +322,15 @@ void GameUI::renderWinMessage() {
 void GameUI::renderButtons() {
     SDL_Color buttonColor = {100, 200, 100, 255};
     SDL_Color quitColor = {200, 100, 100, 255};
+    SDL_Color backColor = {150, 150, 150, 255};
     
-    // New Game button
-    drawButton(50, WINDOW_HEIGHT - 80, BUTTON_WIDTH, BUTTON_HEIGHT, "New Game", buttonColor);
+    // Back button (left side)
+    drawButton(50, WINDOW_HEIGHT - 80, BUTTON_WIDTH, BUTTON_HEIGHT, "Back", backColor);
     
-    // Quit button
+    // New Game button (center)
+    drawButton(WINDOW_WIDTH / 2 - BUTTON_WIDTH / 2, WINDOW_HEIGHT - 80, BUTTON_WIDTH, BUTTON_HEIGHT, "New Game", buttonColor);
+    
+    // Quit button (right side)
     drawButton(WINDOW_WIDTH - BUTTON_WIDTH - 50, WINDOW_HEIGHT - 80, BUTTON_WIDTH, BUTTON_HEIGHT, "Quit", quitColor);
 }
 
@@ -308,8 +342,10 @@ int GameUI::getColumnFromMouseX(int mouseX) {
 }
 
 bool GameUI::isMouseOverNewGameButton(int mouseX, int mouseY) {
-    return mouseX >= 50 && mouseX <= 50 + BUTTON_WIDTH &&
-           mouseY >= WINDOW_HEIGHT - 80 && mouseY <= WINDOW_HEIGHT - 80 + BUTTON_HEIGHT;
+    return mouseX >= WINDOW_WIDTH / 2 - BUTTON_WIDTH / 2 && 
+           mouseX <= WINDOW_WIDTH / 2 + BUTTON_WIDTH / 2 &&
+           mouseY >= WINDOW_HEIGHT - 80 && 
+           mouseY <= WINDOW_HEIGHT - 80 + BUTTON_HEIGHT;
 }
 
 bool GameUI::isMouseOverQuitButton(int mouseX, int mouseY) {
@@ -317,6 +353,11 @@ bool GameUI::isMouseOverQuitButton(int mouseX, int mouseY) {
            mouseX <= WINDOW_WIDTH - 50 &&
            mouseY >= WINDOW_HEIGHT - 80 && 
            mouseY <= WINDOW_HEIGHT - 80 + BUTTON_HEIGHT;
+}
+
+bool GameUI::isMouseOverBackButton(int mouseX, int mouseY) {
+    return mouseX >= 50 && mouseX <= 50 + BUTTON_WIDTH &&
+           mouseY >= WINDOW_HEIGHT - 80 && mouseY <= WINDOW_HEIGHT - 80 + BUTTON_HEIGHT;
 }
 
 void GameUI::drawFilledCircle(int centerX, int centerY, int radius, SDL_Color color) {
@@ -370,3 +411,139 @@ void GameUI::renderText(const char* text, int x, int y, SDL_Color color) {
     SDL_DestroyTexture(texture);
     SDL_FreeSurface(surface);
 }
+
+void GameUI::renderModeSelection() {
+    SDL_Color titleColor = {0, 0, 0, 255};
+    SDL_Color buttonColor = {100, 150, 255, 255};
+    SDL_Color selectedColor = {0, 200, 0, 255};
+    SDL_Color startColor = {0, 150, 0, 255};
+    
+    // Title
+    renderText("Connect 4 - Game Mode Selection", WINDOW_WIDTH / 2 - 200, 30, titleColor);
+    
+    // Game Mode buttons
+    renderText("Select Game Mode:", 100, 100, titleColor);
+    
+    SDL_Color pvpColor = (selectedGameMode == GameMode::PLAYER_VS_PLAYER) ? selectedColor : buttonColor;
+    SDL_Color pvaiColor = (selectedGameMode == GameMode::PLAYER_VS_AI) ? selectedColor : buttonColor;
+    
+    drawButton(100, 140, 200, 50, "Player vs Player", pvpColor);
+    drawButton(320, 140, 200, 50, "Player vs AI", pvaiColor);
+    
+    // AI Difficulty selection (only if Player vs AI is selected)
+    if (selectedGameMode == GameMode::PLAYER_VS_AI) {
+        renderText("Select AI Difficulty:", 100, 220, titleColor);
+        
+        SDL_Color easyColor = (selectedAIDifficulty == AIDifficulty::EASY) ? selectedColor : buttonColor;
+        SDL_Color medColor = (selectedAIDifficulty == AIDifficulty::MEDIUM) ? selectedColor : buttonColor;
+        SDL_Color hardColor = (selectedAIDifficulty == AIDifficulty::HARD) ? selectedColor : buttonColor;
+        
+        drawButton(100, 260, 150, 50, "Easy", easyColor);
+        drawButton(270, 260, 150, 50, "Medium", medColor);
+        drawButton(440, 260, 150, 50, "Hard", hardColor);
+        
+        // Show depth slider for Hard mode
+        if (selectedAIDifficulty == AIDifficulty::HARD) {
+            renderText("Minimax Depth:", 100, 340, titleColor);
+            
+            char depthText[32];
+            snprintf(depthText, sizeof(depthText), "%d", selectedMinimaxDepth);
+            renderText(depthText, 250, 340, titleColor);
+            
+            // Draw slider
+            SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+            SDL_Rect sliderBg = {100, 380, 400, 10};
+            SDL_RenderFillRect(renderer, &sliderBg);
+            
+            // Draw slider handle
+            int handleX = 100 + (selectedMinimaxDepth - 1) * 400 / 7;
+            SDL_SetRenderDrawColor(renderer, 0, 150, 0, 255);
+            SDL_Rect handle = {handleX - 5, 370, 10, 30};
+            SDL_RenderFillRect(renderer, &handle);
+            
+            renderText("1", 90, 395, titleColor);
+            renderText("8", 505, 395, titleColor);
+        }
+    }
+    
+    // Start button
+    drawButton(WINDOW_WIDTH / 2 - 100, WINDOW_HEIGHT - 150, 200, 60, "Start Game", startColor);
+}
+
+void GameUI::handleModeSelectionClick(int mouseX, int mouseY) {
+    // Check game mode buttons
+    if (isMouseOverPvPButton(mouseX, mouseY)) {
+        selectedGameMode = GameMode::PLAYER_VS_PLAYER;
+    } else if (isMouseOverPvAIButton(mouseX, mouseY)) {
+        selectedGameMode = GameMode::PLAYER_VS_AI;
+    }
+    
+    // Check AI difficulty buttons (only if PvAI is selected)
+    if (selectedGameMode == GameMode::PLAYER_VS_AI) {
+        if (isMouseOverEasyButton(mouseX, mouseY)) {
+            selectedAIDifficulty = AIDifficulty::EASY;
+        } else if (isMouseOverMediumButton(mouseX, mouseY)) {
+            selectedAIDifficulty = AIDifficulty::MEDIUM;
+        } else if (isMouseOverHardButton(mouseX, mouseY)) {
+            selectedAIDifficulty = AIDifficulty::HARD;
+        }
+        
+        // Check depth slider (only for Hard mode)
+        if (selectedAIDifficulty == AIDifficulty::HARD && isMouseOverDepthSlider(mouseX, mouseY)) {
+            updateDepthFromMouse(mouseX);
+        }
+    }
+    
+    // Check start button
+    if (isMouseOverStartButton(mouseX, mouseY)) {
+        game.setGameMode(selectedGameMode);
+        if (selectedGameMode == GameMode::PLAYER_VS_AI) {
+            game.setAIDifficulty(selectedAIDifficulty);
+            if (selectedAIDifficulty == AIDifficulty::HARD) {
+                game.setMinimaxDepth(selectedMinimaxDepth);
+            }
+        }
+        game.reset();
+        uiState = UIState::PLAYING;
+    }
+}
+
+bool GameUI::isMouseOverPvPButton(int mouseX, int mouseY) {
+    return mouseX >= 100 && mouseX <= 300 && mouseY >= 140 && mouseY <= 190;
+}
+
+bool GameUI::isMouseOverPvAIButton(int mouseX, int mouseY) {
+    return mouseX >= 320 && mouseX <= 520 && mouseY >= 140 && mouseY <= 190;
+}
+
+bool GameUI::isMouseOverEasyButton(int mouseX, int mouseY) {
+    return mouseX >= 100 && mouseX <= 250 && mouseY >= 260 && mouseY <= 310;
+}
+
+bool GameUI::isMouseOverMediumButton(int mouseX, int mouseY) {
+    return mouseX >= 270 && mouseX <= 420 && mouseY >= 260 && mouseY <= 310;
+}
+
+bool GameUI::isMouseOverHardButton(int mouseX, int mouseY) {
+    return mouseX >= 440 && mouseX <= 590 && mouseY >= 260 && mouseY <= 310;
+}
+
+bool GameUI::isMouseOverStartButton(int mouseX, int mouseY) {
+    return mouseX >= WINDOW_WIDTH / 2 - 100 && mouseX <= WINDOW_WIDTH / 2 + 100 &&
+           mouseY >= WINDOW_HEIGHT - 150 && mouseY <= WINDOW_HEIGHT - 90;
+}
+
+bool GameUI::isMouseOverDepthSlider(int mouseX, int mouseY) {
+    return mouseX >= 100 && mouseX <= 500 && mouseY >= 370 && mouseY <= 400;
+}
+
+void GameUI::updateDepthFromMouse(int mouseX) {
+    int relativeX = mouseX - 100;
+    if (relativeX < 0) relativeX = 0;
+    if (relativeX > 400) relativeX = 400;
+    
+    selectedMinimaxDepth = 1 + (relativeX * 7) / 400;
+    if (selectedMinimaxDepth < 1) selectedMinimaxDepth = 1;
+    if (selectedMinimaxDepth > 8) selectedMinimaxDepth = 8;
+}
+

@@ -5,6 +5,11 @@
 #include <SDL2/SDL_ttf.h>
 #include "Game.h"
 
+enum class UIState {
+    MODE_SELECTION,
+    PLAYING
+};
+
 class GameUI {
 public:
     GameUI();
@@ -24,6 +29,12 @@ private:
     Game game;
     int hoveredColumn;
     bool showWinMessage;
+    UIState uiState;
+    
+    // Mode selection state
+    GameMode selectedGameMode;
+    AIDifficulty selectedAIDifficulty;
+    int selectedMinimaxDepth;
     
     // UI constants
     static const int WINDOW_WIDTH = 800;
@@ -40,15 +51,28 @@ private:
     void update();
     void render();
     
+    void renderModeSelection();
     void renderBoard();
     void renderPieces();
     void renderPlayerTurn();
     void renderWinMessage();
     void renderButtons();
     
+    void handleModeSelectionClick(int mouseX, int mouseY);
     int getColumnFromMouseX(int mouseX);
     bool isMouseOverNewGameButton(int mouseX, int mouseY);
     bool isMouseOverQuitButton(int mouseX, int mouseY);
+    bool isMouseOverBackButton(int mouseX, int mouseY);
+    
+    // Mode selection UI helpers
+    bool isMouseOverPvPButton(int mouseX, int mouseY);
+    bool isMouseOverPvAIButton(int mouseX, int mouseY);
+    bool isMouseOverEasyButton(int mouseX, int mouseY);
+    bool isMouseOverMediumButton(int mouseX, int mouseY);
+    bool isMouseOverHardButton(int mouseX, int mouseY);
+    bool isMouseOverStartButton(int mouseX, int mouseY);
+    bool isMouseOverDepthSlider(int mouseX, int mouseY);
+    void updateDepthFromMouse(int mouseX);
     
     void drawFilledCircle(int centerX, int centerY, int radius, SDL_Color color);
     void drawButton(int x, int y, int width, int height, const char* text, SDL_Color bgColor);
