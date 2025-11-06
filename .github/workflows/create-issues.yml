@@ -1,0 +1,43 @@
+name: Create UI Migration Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "create-issues" to confirm issue creation'
+        required: true
+        default: ''
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Verify confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirm }}" != "create-issues" ]; then
+          echo "Error: Confirmation input must be 'create-issues'"
+          echo "Received: ${{ github.event.inputs.confirm }}"
+          exit 1
+        fi
+        
+    - name: Create issues from templates
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Make script executable
+        chmod +x ./create-issues.sh
+        
+        # Run the script to create all issues
+        ./create-issues.sh
+        
+    - name: Summary
+      run: |
+        echo "✅ All UI migration issues have been created successfully!"
+        echo "View them at: https://github.com/${{ github.repository }}/issues"
