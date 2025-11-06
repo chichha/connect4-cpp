@@ -23,17 +23,17 @@ int MinimaxAI::selectMove(const Board& board) {
     // Try each valid move and find the one with the best score
     for (int col : validMoves) {
         Board simBoard = board;
-        simBoard.dropPiece(col, aiPlayer);
-        
-        // Use minimax to evaluate this move
-        int score = minimax(simBoard, depth - 1, 
-                           std::numeric_limits<int>::min(), 
-                           std::numeric_limits<int>::max(), 
-                           false);
-        
-        if (score > bestScore) {
-            bestScore = score;
-            bestMove = col;
+        if (simBoard.dropPiece(col, aiPlayer)) {
+            // Use minimax to evaluate this move
+            int score = minimax(simBoard, depth - 1, 
+                               std::numeric_limits<int>::min(), 
+                               std::numeric_limits<int>::max(), 
+                               false);
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = col;
+            }
         }
     }
     
