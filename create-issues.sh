@@ -41,8 +41,10 @@ for file in "$ISSUES_DIR"/task-*.md; do
         # Extract labels from frontmatter
         labels=$(grep "^labels:" "$file" | sed 's/labels: *\[\(.*\)\]/\1/' | tr -d '"' | tr ',' '\n' | xargs)
         
-        # Remove frontmatter and get body
-        body=$(sed '1,/^---$/d' "$file" | sed '1,/^---$/d')
+        # Remove YAML frontmatter and get body
+        # YAML frontmatter format: ---\nkey: value\n---\nbody
+        # Skip everything between and including the two --- markers
+        body=$(awk '/^---$/{ if(++count==2) next_line=1; next } next_line' "$file")
         
         # Create the issue
         if gh issue create --repo "$REPO" --title "$title" --body "$body" --label "$labels" > /dev/null 2>&1; then
